@@ -1,0 +1,733 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>拓扑映射还能再快吗？ | We code today!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="张恒">
+    
+
+    
+    <meta name="description" content="简介拓扑映射是一个用Ruby实现的组网图搜索算法，用于在大的组网图中搜索满足用户要求的小组网。老版本的拓扑映射算法基于老旧的ruby1.8.6，用户已经多次反馈效率低下。听闻ruby推出了新的2.2版本，我们能否利用新版本ruby的高性能呢？
+平台级优化我们首先考虑代码不做大改动，切换平台和Ruby版本进行优化。方式如下：
+
+Ruby升级到最新版本 2.2
+使用 Linux 替换Windows">
+<meta property="og:type" content="article">
+<meta property="og:title" content="拓扑映射还能再快吗？">
+<meta property="og:url" content="http://yoursite.com/2014/12/13/topomatch_stackprof/index.html">
+<meta property="og:site_name" content="We code today!">
+<meta property="og:description" content="简介拓扑映射是一个用Ruby实现的组网图搜索算法，用于在大的组网图中搜索满足用户要求的小组网。老版本的拓扑映射算法基于老旧的ruby1.8.6，用户已经多次反馈效率低下。听闻ruby推出了新的2.2版本，我们能否利用新版本ruby的高性能呢？
+平台级优化我们首先考虑代码不做大改动，切换平台和Ruby版本进行优化。方式如下：
+
+Ruby升级到最新版本 2.2
+使用 Linux 替换Windows">
+<meta property="og:updated_time" content="2016-12-15T06:53:55.184Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="拓扑映射还能再快吗？">
+<meta name="twitter:description" content="简介拓扑映射是一个用Ruby实现的组网图搜索算法，用于在大的组网图中搜索满足用户要求的小组网。老版本的拓扑映射算法基于老旧的ruby1.8.6，用户已经多次反馈效率低下。听闻ruby推出了新的2.2版本，我们能否利用新版本ruby的高性能呢？
+平台级优化我们首先考虑代码不做大改动，切换平台和Ruby版本进行优化。方式如下：
+
+Ruby升级到最新版本 2.2
+使用 Linux 替换Windows">
+
+    
+    
+    <link rel="icon" href="/img/favicon.png">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="We code today!">We code today!</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">Home</a></li>
+					
+						<li><a href="/archives">Archives</a></li>
+					
+						<li><a href="/about">About</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/12/13/topomatch_stackprof/" title="拓扑映射还能再快吗？" itemprop="url">拓扑映射还能再快吗？</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://yoursite.com/about" title="张恒" target="_blank" itemprop="author">张恒</a>
+		
+  <p class="article-time">
+    <time datetime="2014-12-13T11:46:25.000Z" itemprop="datePublished"> 发表于 2014-12-13</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#简介"><span class="toc-number">1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#平台级优化"><span class="toc-number">2.</span> <span class="toc-text">平台级优化</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#代码级优化"><span class="toc-number">3.</span> <span class="toc-text">代码级优化</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#优化ConflictCheck"><span class="toc-number">3.1.</span> <span class="toc-text">优化ConflictCheck</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化SlotType约束"><span class="toc-number">3.2.</span> <span class="toc-text">优化SlotType约束</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化top方法"><span class="toc-number">3.3.</span> <span class="toc-text">优化top方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化Minienv-Env-Connect"><span class="toc-number">3.4.</span> <span class="toc-text">优化Minienv::Env::Connect</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化TestlibTopo-Match-ConnectorMatcher"><span class="toc-number">3.5.</span> <span class="toc-text">优化TestlibTopo::Match::ConnectorMatcher</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化Minienv-Envbase-objname"><span class="toc-number">3.6.</span> <span class="toc-text">优化Minienv::Envbase#objname</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化Minienv-Envbase-parent"><span class="toc-number">3.7.</span> <span class="toc-text">优化Minienv::Envbase#parent</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化Minienv-Envbase-descendants"><span class="toc-number">3.8.</span> <span class="toc-text">优化Minienv::Envbase#descendants</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化剩余方法"><span class="toc-number">3.9.</span> <span class="toc-text">优化剩余方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#最终结果"><span class="toc-number">3.10.</span> <span class="toc-text">最终结果</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#结论"><span class="toc-number">4.</span> <span class="toc-text">结论</span></a></li></ol>
+		
+		</div>
+		
+		<h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>拓扑映射是一个用Ruby实现的组网图搜索算法，用于在大的组网图中搜索满足用户要求的小组网。老版本的拓扑映射算法基于老旧的<code>ruby1.8.6</code>，用户已经多次反馈效率低下。听闻ruby推出了新的2.2版本，我们能否利用新版本ruby的高性能呢？</p>
+<h1 id="平台级优化"><a href="#平台级优化" class="headerlink" title="平台级优化"></a>平台级优化</h1><p>我们首先考虑代码不做大改动，切换平台和Ruby版本进行优化。方式如下：</p>
+<ul>
+<li>Ruby升级到最新版本 <strong>2.2</strong></li>
+<li>使用 <strong>Linux</strong> 替换Windows</li>
+</ul>
+<p>我们使用一个运行时间很长的测试数据来测试性能，测试机器都是公司的E6000高配服务器，12核3.2G至强CPU(<code>CRuby</code>只能用单核，多核没意义)。测试结果请参考下图：</p>
+<table>
+<thead>
+<tr>
+<th>Ruby版本</th>
+<th>操作系统</th>
+<th>计算时间（秒）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ruby 1.8.7</td>
+<td>Windows2008</td>
+<td><code>790</code></td>
+</tr>
+<tr>
+<td>jruby 9.0.0.0.pre1</td>
+<td>Ubuntu 12.04.2/JAVA7</td>
+<td><code>559</code></td>
+</tr>
+<tr>
+<td>Rubinius 2.5.3</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>547</code></td>
+</tr>
+<tr>
+<td>jruby 9.0.0.0.pre1</td>
+<td>Ubuntu 12.04.2/JAVA8</td>
+<td><code>516</code></td>
+</tr>
+<tr>
+<td>Ruby 2.1.3</td>
+<td>Windows2008</td>
+<td><code>436</code></td>
+</tr>
+<tr>
+<td>Ruby 2.1.3</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>324</code></td>
+</tr>
+<tr>
+<td>Ruby 2.2.0</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>314</code></td>
+</tr>
+</tbody>
+</table>
+<p>从数据来看，在Ubuntu平台的Ruby2.2性能最好。在执行过程中，<code>Rubinius</code>出现过随机错误，感觉不是太稳定。</p>
+<a id="more"></a>
+<h1 id="代码级优化"><a href="#代码级优化" class="headerlink" title="代码级优化"></a>代码级优化</h1><p>通过切换操作系统和平台，通过<code>stackprof</code>分析代码性能，进行优化。参考来源见<a href="http://tmm1.net/ruby21-profiling/" target="_blank" rel="external">tmm1的博客</a>。</p>
+<blockquote>
+<p>注意:</p>
+<ol>
+<li>以下所有优化分析/测试操作都是在Linux上执行的</li>
+<li><code>stackprof</code>使用了Ruby2.1提供的API，因此只支持Ruby2.1以上版本</li>
+</ol>
+</blockquote>
+<h2 id="优化ConflictCheck"><a href="#优化ConflictCheck" class="headerlink" title="优化ConflictCheck"></a>优化ConflictCheck</h2><p>经过测试，发现某些用户开发的插件中，同/跨板约束占据了大量的时间，优化效果不佳，暂时先禁用此优化规则。</p>
+<p>经过此次优化，时间下降到<code>276</code>秒。</p>
+<h2 id="优化SlotType约束"><a href="#优化SlotType约束" class="headerlink" title="优化SlotType约束"></a>优化SlotType约束</h2><p>经过分析，发现约束中的SlotType约束占据了很多时间。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">==================================</div><div class="line">  Mode: cpu(1000)</div><div class="line">  Samples: 30019 (0.06% miss rate)</div><div class="line">  GC: 4601 (15.33%)</div><div class="line">==================================</div><div class="line">     TOTAL    (pct)     SAMPLES    (pct)     FRAME</div><div class="line">     13200  (44.0%)       13200  (44.0%)     block in TopoPluginRouter::SlotAux#any?</div><div class="line">       839   (2.8%)         839   (2.8%)     block in TestlibTopo::Topo::Restrict#validate</div></pre></td></tr></table></figure>
+<p>继续跟踪:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">stackprof tmp/perf-result.dump --method &apos;block in TopoPluginRouter::SlotAux#any?&apos;          </div><div class="line">block in TopoPluginRouter::SlotAux#any? (/root/.rbenv/versions/2.2.0/lib/ruby/gems/2.2.0/gems/topo-plugin-router-2.0.5/lib/topo-plugin-router/dsl/port_dsl.rb:56)</div><div class="line">  samples:  13200 self (44.0%)  /   13200 total (44.0%)</div><div class="line">  callers:</div><div class="line">    13200  (  100.0%)  TopoPluginRouter::SlotAux#any?</div><div class="line">  code:</div><div class="line">                                  |    56  |       items.each &#123; |c|</div><div class="line">                                  |    57  |         c.strip! # 去除空格，防止多余的空格引发判断问题</div><div class="line">                                  |    58  |         c.downcase! # 都转换为小些再比较</div><div class="line">                                  |    59  | </div><div class="line">                                  |    60  |         # 用户如果输入错误，则跳过</div><div class="line">  765    (2.5%) /   765   (2.5%)  |    61  |         next if c.empty?</div><div class="line">                                  |    62  | </div><div class="line">  795    (2.6%) /   795   (2.6%)  |    63  |         if c[0].chr == &apos;!&apos; # 如果是!表达式，则应该不包含此slottype值</div><div class="line">                                  |    64  |           return true if port_slottype !~ /#&#123;c.gsub(/^!/, &apos;&apos;)&#125;/</div><div class="line">                                  |    65  |         else # 普通表达式则包含此slottype值</div><div class="line"> 11640   (38.8%) /  11640  (38.8%)|    66  |           return true if port_slottype =~ /#&#123;c&#125;/</div><div class="line">                                  |    67  |         end</div></pre></td></tr></table></figure>
+<p>可以看到正则表达式匹配占据了大量的时间。</p>
+<p>看看实现原理：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">@dtb_to_dta1.slottype(<span class="string">"*BSU*|*LPUF-21*|*LPUF-40*|*LPUF-51*|*LPUF-101*|*LPUF-120*|*LPUF-240*|*LPUF-20*"</span>)</div></pre></td></tr></table></figure>
+<p>用户这样写，我们需要把具体的字符串转换为8个正则表达式，一个个进行运算，因此效率很低。其实只需要写一个正则表达式即可。我们给用户提供一个改进版本的方法<code>slottype</code>，支持传入正则表达式。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">REGEX_LPUF_BUS = <span class="regexp">/(BSU|LPUF-(21|40|51|101|120|240)|LPUF-20)/i</span></div><div class="line">@dtb_to_dta1.slottype REGEX_LPUF_BUS</div></pre></td></tr></table></figure>
+<p>这样我们就只需要运算一次正则表达式即可，效率大为提升。</p>
+<p>经过此次改进，时间减少为<code>185</code>秒。</p>
+<h2 id="优化top方法"><a href="#优化top方法" class="headerlink" title="优化top方法"></a>优化top方法</h2><p>缓存<code>top</code>方法，减少计算量。<code>top</code>方法被频繁调用，因此我们可以缓存返回值，减少计算。</p>
+<p>原来：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">top</span></span></div><div class="line">  <span class="keyword">if</span> parent.<span class="literal">nil</span>? <span class="keyword">or</span> parent.parent.<span class="literal">nil</span>?</div><div class="line">    <span class="keyword">self</span></div><div class="line">  <span class="keyword">else</span></div><div class="line">    parent.top</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+<p>现在：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">top</span></span></div><div class="line">  @top <span class="params">||</span>= <span class="keyword">if</span> parent.<span class="literal">nil</span>? <span class="keyword">or</span> parent.parent.<span class="literal">nil</span>?</div><div class="line">    <span class="keyword">self</span></div><div class="line">  <span class="keyword">else</span></div><div class="line">    parent.top</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+<p>经过此次优化，时间减少为<code>149</code>秒。</p>
+<h2 id="优化Minienv-Env-Connect"><a href="#优化Minienv-Env-Connect" class="headerlink" title="优化Minienv::Env::Connect"></a>优化Minienv::Env::Connect</h2><p>测试数据:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">stackprof tmp/perf-result.dump --method &apos;Minienv::Env::Connect#src_port&apos; </div><div class="line">Minienv::Env::Connect#src_port (/root/.rbenv/versions/2.2.0/lib/ruby/gems/2.2.0/gems/minienv-1.0.2/lib/minienv/connect.rb:20)</div><div class="line">  samples:  3373 self (9.0%)  /   3373 total (9.0%)</div><div class="line">  callers:</div><div class="line">     911  (   27.0%)  Minienv::Env::Connect#cross_port</div><div class="line">     864  (   25.6%)  Minienv::Env::Connect#half_cross?</div><div class="line">     796  (   23.6%)  Minienv::Env::Connect#uncross_port</div></pre></td></tr></table></figure>
+<p>可见<code>cross_port</code>,<code>half_cross?</code>,<code>uncross_port</code>访问次数比较多，可以利用缓存减少访问次数。优化原理同上。</p>
+<p>源代码：<br><figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">cross_port</span></span></div><div class="line">  <span class="keyword">if</span> src_port.top.physical_switch?</div><div class="line">    src_port</div><div class="line">  <span class="keyword">else</span></div><div class="line">    dst_port</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure></p>
+<p>修改后:<br><figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">cross_port</span></span></div><div class="line">  @cross_port <span class="params">||</span>= <span class="keyword">if</span> src_port.top.physical_switch?</div><div class="line">    src_port</div><div class="line">  <span class="keyword">else</span></div><div class="line">    dst_port</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure></p>
+<p>经过此次优化，时间减少为<code>131</code>秒。</p>
+<h2 id="优化TestlibTopo-Match-ConnectorMatcher"><a href="#优化TestlibTopo-Match-ConnectorMatcher" class="headerlink" title="优化TestlibTopo::Match::ConnectorMatcher"></a>优化TestlibTopo::Match::ConnectorMatcher</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">==================================</div><div class="line">  Mode: cpu(1000)</div><div class="line">  Samples: 32968 (0.05% miss rate)</div><div class="line">  GC: 3441 (10.44%)</div><div class="line">==================================</div><div class="line">     TOTAL    (pct)     SAMPLES    (pct)     FRAME</div><div class="line">      3402  (10.3%)        3365  (10.2%)     rescue in TestlibTopo::Match::ConnectorMatcher#recheck_when_loop</div></pre></td></tr></table></figure>
+<p>跟踪方法输出：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">rescue in TestlibTopo::Match::ConnectorMatcher#recheck_when_loop (/root/.rbenv/versions/2.2.0/lib/ruby/gems/2.2.0/gems/hunter-algorithm-2.0.0/lib/hunter/match/rule/connector_matcher.rb:64)</div><div class="line">  samples:  3365 self (10.2%)  /   3402 total (10.3%)</div><div class="line">  callers:</div><div class="line">    3402  (  100.0%)  TestlibTopo::Match::ConnectorMatcher#recheck_when_loop</div><div class="line">  callees (37 total):</div><div class="line">      17  (   45.9%)  Minienv::Envbase#top</div><div class="line">      17  (   45.9%)  Minienv::Env::Connect#src_port</div><div class="line">       3  (    8.1%)  Minienv::Env::Connect#dst_port</div><div class="line">  code:</div><div class="line">                                  |    64  |       yield</div><div class="line">                                  |    65  | </div><div class="line">  284    (0.9%) /   284   (0.9%)  |    66  |     rescue TestlibTopo::MatchException</div><div class="line">                                  |    67  |       # 如果直连链接是自环的，那么要反方向再尝试一次</div><div class="line">   39    (0.1%) /     2   (0.0%)  |    68  |       if env_link.src_port.top == env_link.dst_port.top</div><div class="line">                                  |    69  |         send method_name, env_link, candidate</div><div class="line">                                  |    70  |       else</div><div class="line"> 3079    (9.3%) /  3079   (9.3%)  |    71  |         raise</div><div class="line">                                  |    72  |       end</div></pre></td></tr></table></figure></p>
+<p>可以看到是<code>raise</code>方法占用了大量时间。通过分析代码，发现里面是用了异常来控制执行流程。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">rescue</span> TestlibTopo::MatchException</div><div class="line">  <span class="comment"># 如果直连链接是自环的，那么要反方向再尝试一次</span></div><div class="line">  <span class="keyword">if</span> env_link.src_port.top == env_link.dst_port.top</div><div class="line">    send method_name, env_link, candidate</div><div class="line">  <span class="keyword">else</span></div><div class="line">    raise</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+<p>用异常控制执行流程代价很高，因此我们将其修改为普通的<code>if else</code>判断即可。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">if</span> <span class="keyword">yield</span></div><div class="line">  <span class="literal">true</span></div><div class="line"><span class="keyword">else</span></div><div class="line">  <span class="keyword">if</span> env_link.src_port.top == env_link.dst_port.top</div><div class="line">    send method_name, env_link, candidate</div><div class="line">  <span class="keyword">else</span></div><div class="line">    <span class="literal">false</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+<p>经过此次优化，时间下降到<code>109</code>秒。</p>
+<h2 id="优化Minienv-Envbase-objname"><a href="#优化Minienv-Envbase-objname" class="headerlink" title="优化Minienv::Envbase#objname"></a>优化Minienv::Envbase#objname</h2><p>继续采样：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">==================================</div><div class="line">  Mode: cpu(1000)</div><div class="line">  Samples: 27500 (0.07% miss rate)</div><div class="line">  GC: 2539 (9.23%)</div><div class="line">==================================</div><div class="line">     TOTAL    (pct)     SAMPLES    (pct)     FRAME</div><div class="line">      2780  (10.1%)        2780  (10.1%)     Minienv::Envbase#objname</div></pre></td></tr></table></figure></p>
+<p>跟踪方法：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">Minienv::Envbase#to_s (/root/.rbenv/versions/2.2.0/lib/ruby/gems/2.2.0/gems/minienv-1.0.3/lib/minienv/env_base.rb:37)</div><div class="line">  samples:    30 self (0.1%)  /   2676 total (9.7%)</div><div class="line">  callers:</div><div class="line">    1401  (   52.4%)  block (2 levels) in &lt;module:TopoPluginRouter&gt;</div><div class="line">     413  (   15.4%)  block (2 levels) in TestlibTopo::Selector::CrossLinkSelector#each</div></pre></td></tr></table></figure></p>
+<p>继续跟踪：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">callees (9787 total):</div><div class="line">  3601  (   36.8%)  Log4r::Logger.[]</div><div class="line">  2090  (   21.4%)  #&lt;Log4r::Logger:0x007f38311ac460&gt;.debug</div></pre></td></tr></table></figure></p>
+<p>我顶，竟然跟踪到日志里面去了。我们之前使用<code>log4r</code>的配置文件中，不是已经把日志关闭了吗？看看代码：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">self</span>.<span class="title">debug</span><span class="params">(str = <span class="literal">nil</span>)</span></span></div><div class="line">  log = Log4r::Logger[<span class="string">'toporesultlogger'</span>]</div><div class="line">  <span class="keyword">if</span> log.debug?</div><div class="line">    <span class="keyword">if</span> block_given?</div><div class="line">      log.debug(<span class="keyword">yield</span>)</div><div class="line">    <span class="keyword">else</span></div><div class="line">      log.debug(str)</div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+<p>原来log没有缓存，导致每次都访问。还有全局日志设置为<code>DEBUG</code>，导致<code>log.debug(yield)</code>这一句仍然要执行，完全无必要，修改为<code>WARN</code>即可不执行<code>DEBUG</code>语句。</p>
+<p>因此，修改为：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">@@log = Log4r::Logger[<span class="string">'toporesultlogger'</span>]</div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">self</span>.<span class="title">debug</span><span class="params">(str = <span class="literal">nil</span>)</span></span></div><div class="line">  <span class="keyword">if</span> @@log.debug?</div><div class="line">    <span class="keyword">if</span> block_given?</div><div class="line">      @@log.debug(<span class="keyword">yield</span>)</div><div class="line">    <span class="keyword">else</span></div><div class="line">      @@log.debug(str)</div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+<p>log4r日志配置文件：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="attr">log4r_config:</span></div><div class="line"><span class="attr">  pre_config:</span></div><div class="line"><span class="attr">    global:</span></div><div class="line"><span class="attr">      level:</span> WARN</div></pre></td></tr></table></figure>
+<p>优化完成后，执行时间为<code>63</code>秒。</p>
+<h2 id="优化Minienv-Envbase-parent"><a href="#优化Minienv-Envbase-parent" class="headerlink" title="优化Minienv::Envbase#parent"></a>优化Minienv::Envbase#parent</h2><p>继续分析，执行采样：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">==================================</div><div class="line">  Mode: cpu(1000)</div><div class="line">  Samples: 15961 (0.11% miss rate)</div><div class="line">  GC: 1326 (8.31%)</div><div class="line">==================================</div><div class="line">     TOTAL    (pct)     SAMPLES    (pct)     FRAME</div><div class="line">      1012   (6.3%)        1012   (6.3%)     Minienv::Envbase#parent</div><div class="line">      2064  (12.9%)         946   (5.9%)     Minienv::Envbase#descendants</div></pre></td></tr></table></figure>
+<p>分析parent方法：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">Minienv::Envbase#parent (/root/.rbenv/versions/2.2.0/lib/ruby/gems/2.2.0/gems/minienv-1.0.3/lib/minienv/env_base.rb:49)</div><div class="line">  samples:  1012 self (6.3%)  /   1012 total (6.3%)</div><div class="line">  callers:</div><div class="line">     413  (   40.8%)  Minienv::Envbase#ancestors</div><div class="line">     282  (   27.9%)  block (2 levels) in &lt;module:TopoPluginRouter&gt;</div><div class="line">     117  (   11.6%)  block in TopoPluginRouter::PortDsl#slottype!</div></pre></td></tr></table></figure></p>
+<p>可见<code>Minienv::Envbase#ancestors</code>耗用时间比较多，应该考虑使用缓存。</p>
+<p>优化后执行时间为<code>59</code>秒。</p>
+<h2 id="优化Minienv-Envbase-descendants"><a href="#优化Minienv-Envbase-descendants" class="headerlink" title="优化Minienv::Envbase#descendants"></a>优化Minienv::Envbase#descendants</h2><p>继续分析：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">==================================</div><div class="line">  Mode: cpu(1000)</div><div class="line">  Samples: 14920 (0.12% miss rate)</div><div class="line">  GC: 1245 (8.34%)</div><div class="line">==================================</div><div class="line">     TOTAL    (pct)     SAMPLES    (pct)     FRAME</div><div class="line">      1988  (13.3%)         890   (6.0%)     Minienv::Envbase#descendants</div></pre></td></tr></table></figure>
+<p>该来的还是会来的……继续做方法缓存。需要注意的是：如果用户的插件不修改组网图，那么方法缓存的数据是没有问题的。如果用户插件修改修改了组网图结构，那么可能会有问题。</p>
+<h2 id="优化剩余方法"><a href="#优化剩余方法" class="headerlink" title="优化剩余方法"></a>优化剩余方法</h2><p>经过分析，基本上都是要缓存方法，就不再详细说明了。</p>
+<h2 id="最终结果"><a href="#最终结果" class="headerlink" title="最终结果"></a>最终结果</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">==================================</div><div class="line">  Mode: cpu(1000)</div><div class="line">  Samples: 11537 (0.16% miss rate)</div><div class="line">  GC: 971 (8.42%)</div><div class="line">==================================</div><div class="line">     TOTAL    (pct)     SAMPLES    (pct)     FRAME</div><div class="line">       704   (6.1%)         704   (6.1%)     Minienv::Env::Connect#src_port</div><div class="line">       623   (5.4%)         623   (5.4%)     block in TestlibTopo::Topo::Restrict#validate</div></pre></td></tr></table></figure>
+<p>最终经过分析，采样的代码基本上都是在执行约束了，没有进一步优化空间。下一步优化只能从算法本身来优化：</p>
+<ul>
+<li>增加优化规则，过滤一些分支</li>
+<li>增加多线程并发运算（<code>CRuby</code>暂时不支持，考虑使用<code>JRuby</code>或者<code>Rubinius</code>）</li>
+</ul>
+<p>最终优化效果：</p>
+<table>
+<thead>
+<tr>
+<th>Ruby版本</th>
+<th>操作系统</th>
+<th>计算时间（秒）</th>
+<th>优化步骤</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ruby 1.8.7</td>
+<td>Windows2008</td>
+<td><code>790</code></td>
+<td></td>
+</tr>
+<tr>
+<td>jruby 9.0.0.0.pre1</td>
+<td>Ubuntu 12.04.2/JAVA7</td>
+<td><code>559</code></td>
+<td>替换为jruby</td>
+</tr>
+<tr>
+<td>Rubinius 2.5.3</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>547</code></td>
+<td>替换为Rbx</td>
+</tr>
+<tr>
+<td>jruby 9.0.0.0.pre1</td>
+<td>Ubuntu 12.04.2/JAVA8</td>
+<td><code>516</code></td>
+<td>升级Java版本</td>
+</tr>
+<tr>
+<td>Ruby 2.1.3</td>
+<td>Windows2008</td>
+<td><code>436</code></td>
+<td>升级CRuby到<code>2.1.3</code></td>
+</tr>
+<tr>
+<td>Ruby 2.1.3</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>324</code></td>
+<td>替换操作系统为Ubuntu</td>
+</tr>
+<tr>
+<td>Ruby 2.2.0</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>314</code></td>
+<td>升级CRuby到<code>2.2.0</code></td>
+</tr>
+<tr>
+<td>Ruby 2.2.0</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>276</code></td>
+<td>去掉ConflictCheck检查</td>
+</tr>
+<tr>
+<td>Ruby 2.2.0</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>185</code></td>
+<td>优化SlotType约束</td>
+</tr>
+<tr>
+<td>Ruby 2.2.0</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>149</code></td>
+<td>优化top方法</td>
+</tr>
+<tr>
+<td>Ruby 2.2.0</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>131</code></td>
+<td>优化uncross_port方法</td>
+</tr>
+<tr>
+<td>Ruby 2.2.0</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>109</code></td>
+<td>优化ConnectorMatcher类</td>
+</tr>
+<tr>
+<td>Ruby 2.2.0</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>63</code></td>
+<td>优化日志Envbase#objname</td>
+</tr>
+<tr>
+<td>Ruby 2.2.0</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>46</code></td>
+<td>最终优化</td>
+</tr>
+</tbody>
+</table>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>总结了一下算法优化的方法：</p>
+<ol>
+<li>使用高版本Ruby，一般新版本Ruby在性能方面比老版本都要高</li>
+<li>尽量使用Linux平台，效率上会比Windows平台高</li>
+<li>使用性能分析器(Profiler)对算法进行分析，找到消耗CPU最多的代码进行优化<ul>
+<li>去掉不需要的计算代码</li>
+<li>缓存计算结果，避免重复计算</li>
+<li>不要使用异常控制执行流程</li>
+<li>能合并的操作尽量合并</li>
+<li>注意日志记录对性能的影响</li>
+</ul>
+</li>
+</ol>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/ruby/">ruby</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/ruby/">ruby</a><a href="/tags/stackprof/">stackprof</a><a href="/tags/优化/">优化</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://yoursite.com/2014/12/13/topomatch_stackprof/" data-title="拓扑映射还能再快吗？ | We code today!" data-tsina="undefined" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/04/18/ruby_gil/" title="Ruby GIL之谜">
+  <strong>上一篇：</strong><br/>
+  <span>
+  Ruby GIL之谜</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/11/24/use_ocra/"  title="使用OCRA将ruby脚本转换为EXE可执行文件运行">
+ <strong>下一篇：</strong><br/> 
+ <span>使用OCRA将ruby脚本转换为EXE可执行文件运行
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2014/12/13/topomatch_stackprof/" data-title="拓扑映射还能再快吗？" data-url="http://yoursite.com/2014/12/13/topomatch_stackprof/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#简介"><span class="toc-number">1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#平台级优化"><span class="toc-number">2.</span> <span class="toc-text">平台级优化</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#代码级优化"><span class="toc-number">3.</span> <span class="toc-text">代码级优化</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#优化ConflictCheck"><span class="toc-number">3.1.</span> <span class="toc-text">优化ConflictCheck</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化SlotType约束"><span class="toc-number">3.2.</span> <span class="toc-text">优化SlotType约束</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化top方法"><span class="toc-number">3.3.</span> <span class="toc-text">优化top方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化Minienv-Env-Connect"><span class="toc-number">3.4.</span> <span class="toc-text">优化Minienv::Env::Connect</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化TestlibTopo-Match-ConnectorMatcher"><span class="toc-number">3.5.</span> <span class="toc-text">优化TestlibTopo::Match::ConnectorMatcher</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化Minienv-Envbase-objname"><span class="toc-number">3.6.</span> <span class="toc-text">优化Minienv::Envbase#objname</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化Minienv-Envbase-parent"><span class="toc-number">3.7.</span> <span class="toc-text">优化Minienv::Envbase#parent</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化Minienv-Envbase-descendants"><span class="toc-number">3.8.</span> <span class="toc-text">优化Minienv::Envbase#descendants</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#优化剩余方法"><span class="toc-number">3.9.</span> <span class="toc-text">优化剩余方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#最终结果"><span class="toc-number">3.10.</span> <span class="toc-text">最终结果</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#结论"><span class="toc-number">4.</span> <span class="toc-text">结论</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/docker/" title="docker">docker<sup>1</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/ruby/" title="ruby">ruby<sup>6</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/web/" title="web">web<sup>1</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/ruby/" title="ruby">ruby<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/并发/" title="并发">并发<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/shell/" title="shell">shell<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/json/" title="json">json<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/clean/" title="clean">clean<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/性能/" title="性能">性能<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/gil/" title="gil">gil<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/docker/" title="docker">docker<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/覆盖率/" title="覆盖率">覆盖率<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/rbenv/" title="rbenv">rbenv<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ocra/" title="ocra">ocra<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/exe/" title="exe">exe<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/stackprof/" title="stackprof">stackprof<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/优化/" title="优化">优化<sup>1</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="linkslist">
+  <p class="asidetitle">友情链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="https://coderq.com" target="_blank" title="一个面向程序员交流分享的新一代社区">码农圈</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://www.tommylike.com" target="_blank" title="TommyLike&#39;s Blog">TommyLike&#39;s Blog</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> We code today, everyday. <br/>
+			From the code, to the code.</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://yoursite.com/about" target="_blank" title="张恒">张恒</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wecode-today"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+  </body>
+</html>

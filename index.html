@@ -1,0 +1,948 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>We code today!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="张恒">
+    
+
+    
+    <meta property="og:type" content="website">
+<meta property="og:title" content="We code today!">
+<meta property="og:url" content="http://yoursite.com/index.html">
+<meta property="og:site_name" content="We code today!">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="We code today!">
+
+    
+    
+    <link rel="icon" href="/img/favicon.png">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="We code today!">We code today!</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">Home</a></li>
+					
+						<li><a href="/archives">Archives</a></li>
+					
+						<li><a href="/about">About</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main">
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2016/12/15/docker_clean/" title="docker镜像未清理导致磁盘空间满" itemprop="url">docker镜像未清理导致磁盘空间满</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://yoursite.com/about" title="张恒" target="_blank" itemprop="author">张恒</a>
+		
+  <p class="article-time">
+    <time datetime="2016-12-15T10:53:00.000Z" itemprop="datePublished"> 发表于 2016-12-15</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>我们的某个服务突然有一天，所有的测试环境全部执行失败，返回500。结果到某台测试服务器上一看，磁盘空间满了！</p>
+<p>最后发现是大量的历史版本Docker镜像未清理导致的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              8470735ac8e2        4 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              d88765ddc8fe        5 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              4aee0b83558a        6 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              add02e6af8f5        6 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              97eb4f2da485        6 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              95b8f4d92383        6 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              a2b51b2e138a        7 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              3b250877a8e1        7 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              3aa940434a99        7 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              68b1ec83803c        7 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              951db5450246        8 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              73b1750b31b9        8 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              13e7b553b4b7        8 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              4ea2c3cdc7bc        8 weeks ago         1.121 GB</div><div class="line">noah-docker.host.huawei.com/noah-service/hunter         &lt;none&gt;              a5bc7cef75d0        8 weeks ago         1.121 GB</div></pre></td></tr></table></figure>
+<p>在网络上查询了之后，可以使用<code>docker rmi $(docker images -q -f dangling=true)</code>命令来清理untagged镜像。执行之后清理出大概25G的空间。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Filesystem      Size  Used Avail Use% Mounted on</div><div class="line">/dev/xvda2       36G  5.4G   29G  16% /</div></pre></td></tr></table></figure>
+<h1 id="优化部署"><a href="#优化部署" class="headerlink" title="优化部署"></a>优化部署</h1><p>由于测试版本的应用，版本号总是<code>lastest</code>，因此每部署一次就留下了一个untagged镜像。所以我们把清理脚本加入部署阶段，部署最新版本之前先执行一次清理。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">echo &quot;Clean old docker images&quot;</div><div class="line">docker rm $(docker ps -a -q)</div><div class="line">docker rmi $(docker images -q -f dangling=true)</div></pre></td></tr></table></figure>
+<p>这样就能减少大量的untagged镜像，节省磁盘空间。</p>
+
+        
+        
+        <p class="article-more-link">
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/docker/">docker</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/clean/">clean</a><a href="/tags/docker/">docker</a><a href="/tags/shell/">shell</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+	  	<span></span>
+		<a href="/2016/12/15/docker_clean/#comments" class="ds-thread-count comments-count-link" data-thread-key="2016/12/15/docker_clean/" data-count-type="comments">&nbsp;</a>
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/05/02/scchelv/" title="四川车侣网优化分析" itemprop="url">四川车侣网优化分析</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://yoursite.com/about" title="张恒" target="_blank" itemprop="author">张恒</a>
+		
+  <p class="article-time">
+    <time datetime="2015-05-02T15:29:00.000Z" itemprop="datePublished"> 发表于 2015-05-02</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <h1 id="车侣网存在问题"><a href="#车侣网存在问题" class="headerlink" title="车侣网存在问题"></a>车侣网存在问题</h1><h2 id="首页加载慢"><a href="#首页加载慢" class="headerlink" title="首页加载慢"></a>首页加载慢</h2><p>车侣网首页加载时间超长，需要30秒以上时间。</p>
+<p>我们看看Chrome的加载记录：</p>
+<p><img src="http://7vzu7z.com1.z0.glb.clouddn.com/2015/05/02/shichuanchelv.png" alt="homepage"></p>
+<p>通过加载记录我们可以很清楚的发现，图片加载占用了太多的时间。为什么图片加载这么慢？因为浏览器跟站点的并发数目是有限制的，一般是4-6个。这意味着如果把大量的图片都放在一个网站上，浏览器下载的效率很低，很多图片会处于pending状态，等待下载完成。</p>
+<p>我们有什么办法改进首页的加载呢？方法如下：</p>
+<ol>
+<li>有些图片的效果当前通过css文件已经可以完全实现。因此这部分的图片就直接转换为css代码，省去了单个文件的下载，容量也小很多。</li>
+<li>采用按需加载图片模式。用户当前看到的部分才加载图片，看不到的就不加载，这也能极大得提升加载速度。</li>
+<li>将图片保存在<a href="https://www.upyun.com/index.html" target="_blank" rel="external">又拍云</a>或者<a href="www.qiniu.com">七牛云</a>这种专业的图片存储商上，价格挺便宜。</li>
+</ol>
+<h2 id="网站设计不合理"><a href="#网站设计不合理" class="headerlink" title="网站设计不合理"></a>网站设计不合理</h2><p>商城是一个负荷很高的网站，不应该跟车侣网放在同一个服务器上，应该单独放一个服务器。</p>
+
+        
+        
+        <p class="article-more-link">
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/web/">web</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/性能/">性能</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+	  	<span></span>
+		<a href="/2015/05/02/scchelv/#comments" class="ds-thread-count comments-count-link" data-thread-key="2015/05/02/scchelv/" data-count-type="comments">&nbsp;</a>
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/04/18/ruby_gil/" title="Ruby GIL之谜" itemprop="url">Ruby GIL之谜</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://yoursite.com/about" title="张恒" target="_blank" itemprop="author">张恒</a>
+		
+  <p class="article-time">
+    <time datetime="2015-04-18T21:44:00.000Z" itemprop="datePublished"> 发表于 2015-04-18</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <blockquote>
+<p>从<a href="http://www.jstorimer.com/blogs/workingwithcode/8085491-nobody-understands-the-gil">jstorimer</a>的博客翻译</p>
+</blockquote>
+<h1 id="Nobody-understands-the-GIL-Part1"><a href="#Nobody-understands-the-GIL-Part1" class="headerlink" title="Nobody understands the GIL Part1"></a>Nobody understands the GIL Part1</h1><h2 id="什么是GIL"><a href="#什么是GIL" class="headerlink" title="什么是GIL"></a>什么是GIL</h2><p>提起Ruby的多线程，就不得不说Ruby里面的GIL。GIL全称是<code>Global Interpreter Lock</code>（全局解释器锁），那么GIL到底是啥呢？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">MRI有一个全局的解释器锁。它用于锁住Ruby代码的执行。这意味着在一个多线程环境中，在同一个时间，只有一个线程能够执行Ruby代码。</div></pre></td></tr></table></figure>
+<p>因此，如果你有8个线程，工作在一个8核的CPU机器上，在任何时间中，只有一个线程能够在其中一个核上运行（不过这个不一定表示每次都运行在同一个核心上）。GIL用于保护Ruby内部，用于防止产生竞争环境(race condition)，进而导致数据损坏。</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><h2 id="往数组中增加数据不是线程安全的"><a href="#往数组中增加数据不是线程安全的" class="headerlink" title="往数组中增加数据不是线程安全的"></a>往数组中增加数据不是线程安全的</h2><p>在Ruby中，只有很少的操作默认是线程安全的。比如，往数组中增加元素：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">array = []</div><div class="line"></div><div class="line"><span class="number">5</span>.times.map <span class="keyword">do</span></div><div class="line">  Thread.new <span class="keyword">do</span></div><div class="line">    <span class="number">1000</span>.times <span class="keyword">do</span></div><div class="line">      array &lt;&lt; <span class="literal">nil</span></div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span>.each(&amp;<span class="symbol">:join</span>)</div><div class="line"></div><div class="line">puts array.size</div></pre></td></tr></table></figure>
+<p>这里有5个线程共享1个数组对象。每个线程往数组里面<code>push</code>1000次<code>nil</code>。所以到最后，数组里面应该有5000个nil，是吧？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ ruby pushing_nil.rb</div><div class="line">5000</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ jruby pushing_nil.rb</div><div class="line">4446</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ rbx pushing_nil.rb</div><div class="line">3088</div></pre></td></tr></table></figure>
+<p>这么一个简单地例子，已经暴露出Ruby的一个操作不是线程安全的。在这里到底发生了什么？</p>
+        
+        
+        <p class="article-more-link">
+          
+            <a href="/2015/04/18/ruby_gil/#more">Read More</a>
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/ruby/">ruby</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/gil/">gil</a><a href="/tags/并发/">并发</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+	  	<span></span>
+		<a href="/2015/04/18/ruby_gil/#comments" class="ds-thread-count comments-count-link" data-thread-key="2015/04/18/ruby_gil/" data-count-type="comments">&nbsp;</a>
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/12/13/topomatch_stackprof/" title="拓扑映射还能再快吗？" itemprop="url">拓扑映射还能再快吗？</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://yoursite.com/about" title="张恒" target="_blank" itemprop="author">张恒</a>
+		
+  <p class="article-time">
+    <time datetime="2014-12-13T11:46:25.000Z" itemprop="datePublished"> 发表于 2014-12-13</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>拓扑映射是一个用Ruby实现的组网图搜索算法，用于在大的组网图中搜索满足用户要求的小组网。老版本的拓扑映射算法基于老旧的<code>ruby1.8.6</code>，用户已经多次反馈效率低下。听闻ruby推出了新的2.2版本，我们能否利用新版本ruby的高性能呢？</p>
+<h1 id="平台级优化"><a href="#平台级优化" class="headerlink" title="平台级优化"></a>平台级优化</h1><p>我们首先考虑代码不做大改动，切换平台和Ruby版本进行优化。方式如下：</p>
+<ul>
+<li>Ruby升级到最新版本 <strong>2.2</strong></li>
+<li>使用 <strong>Linux</strong> 替换Windows</li>
+</ul>
+<p>我们使用一个运行时间很长的测试数据来测试性能，测试机器都是公司的E6000高配服务器，12核3.2G至强CPU(<code>CRuby</code>只能用单核，多核没意义)。测试结果请参考下图：</p>
+<table>
+<thead>
+<tr>
+<th>Ruby版本</th>
+<th>操作系统</th>
+<th>计算时间（秒）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ruby 1.8.7</td>
+<td>Windows2008</td>
+<td><code>790</code></td>
+</tr>
+<tr>
+<td>jruby 9.0.0.0.pre1</td>
+<td>Ubuntu 12.04.2/JAVA7</td>
+<td><code>559</code></td>
+</tr>
+<tr>
+<td>Rubinius 2.5.3</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>547</code></td>
+</tr>
+<tr>
+<td>jruby 9.0.0.0.pre1</td>
+<td>Ubuntu 12.04.2/JAVA8</td>
+<td><code>516</code></td>
+</tr>
+<tr>
+<td>Ruby 2.1.3</td>
+<td>Windows2008</td>
+<td><code>436</code></td>
+</tr>
+<tr>
+<td>Ruby 2.1.3</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>324</code></td>
+</tr>
+<tr>
+<td>Ruby 2.2.0</td>
+<td>Ubuntu 12.04.2</td>
+<td><code>314</code></td>
+</tr>
+</tbody>
+</table>
+<p>从数据来看，在Ubuntu平台的Ruby2.2性能最好。在执行过程中，<code>Rubinius</code>出现过随机错误，感觉不是太稳定。</p>
+        
+        
+        <p class="article-more-link">
+          
+            <a href="/2014/12/13/topomatch_stackprof/#more">Read More</a>
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/ruby/">ruby</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/ruby/">ruby</a><a href="/tags/stackprof/">stackprof</a><a href="/tags/优化/">优化</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+	  	<span></span>
+		<a href="/2014/12/13/topomatch_stackprof/#comments" class="ds-thread-count comments-count-link" data-thread-key="2014/12/13/topomatch_stackprof/" data-count-type="comments">&nbsp;</a>
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/11/24/use_ocra/" title="使用OCRA将ruby脚本转换为EXE可执行文件运行" itemprop="url">使用OCRA将ruby脚本转换为EXE可执行文件运行</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://yoursite.com/about" title="张恒" target="_blank" itemprop="author">张恒</a>
+		
+  <p class="article-time">
+    <time datetime="2014-11-24T09:05:10.000Z" itemprop="datePublished"> 发表于 2014-11-24</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <p><strong>淘汰bat/vbs/js吧！</strong></p>
+<p>OCRA是一个一键式Ruby打包工具，可以将Ruby脚本及所需环境构建为一个单独的Exe文件发布，用户环境上没有Ruby也可以运行！在公司内部作为小工具使用特别方便。</p>
+<p>功能：</p>
+<ul>
+<li>LZMA压缩(可选，默认打开)</li>
+<li>支持Ruby 1.8.7 / 1.9.3 / 2.0.0 ( <strong>通过RubyInstaller安装的版本</strong> )</li>
+<li>支持命令行和视窗模式</li>
+<li>根据使用包含gem包，或者从gemfile包含gem包</li>
+</ul>
+<p>OCRA下载：<a href="http://rubygems.org/gems/ocra" target="_blank" rel="external">传送门</a></p>
+<h1 id="使用介绍"><a href="#使用介绍" class="headerlink" title="使用介绍"></a>使用介绍</h1><p>ocra的使用方式很简单，只要安装了ocra之后，执行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ocra script.rb</div></pre></td></tr></table></figure>
+<p>即可生成<code>script.exe</code>文件，包含<code>script.rb</code>文件，Ruby解释器和所有的依赖项（DLL文件和gem包）。</p>
+<h1 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h1><p>对<code>test.rb</code>文件打包，生成<code>print_time.exe</code>文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line">d:\work\open_source\personal_blog\gem_roadmap\problem&gt;ocra D:\temp\test.rb --output D:\temp\print_time.exe</div><div class="line">=== Loading script to check dependencies</div><div class="line">********************</div><div class="line">Time.now = 2014-02-07 16:52:37 +0800</div><div class="line">Time.now = 2014-02-07 16:52:37 +0800</div><div class="line">Time.now = 2014-02-07 16:52:38 +0800</div><div class="line">Time.now = 2014-02-07 16:52:38 +0800</div><div class="line">Time.now = 2014-02-07 16:52:38 +0800</div><div class="line">Time.now = 2014-02-07 16:52:38 +0800</div><div class="line">Time.now = 2014-02-07 16:52:38 +0800</div><div class="line">Time.now = 2014-02-07 16:52:39 +0800</div><div class="line">Time.now = 2014-02-07 16:52:39 +0800</div><div class="line">Time.now = 2014-02-07 16:52:39 +0800</div><div class="line">********************</div><div class="line">=== Including 53 encoding support files (3194880 bytes, use --no-enc to exclude)</div><div class="line">DL is deprecated, please use Fiddle</div><div class="line">=== Building D:/temp/print_time.exe</div><div class="line">=== Adding user-supplied source files</div><div class="line">=== Adding ruby executable ruby.exe</div><div class="line">=== Adding detected DLL C:/Ruby200/bin/zlib1.dll</div><div class="line">=== Adding detected DLL C:/Ruby200/bin/LIBEAY32.dll</div><div class="line">=== Adding detected DLL C:/Ruby200/bin/SSLEAY32.dll</div><div class="line">=== Adding detected DLL C:/Ruby200/bin/libffi-6.dll</div><div class="line">=== Adding library files</div><div class="line">=== Compressing 10006304 bytes</div><div class="line">=== Finished building D:/temp/print_time.exe (2518489 bytes)</div></pre></td></tr></table></figure>
+<p>运行后即可生成<code>print_time.exe</code>文件，此文件可以在没有安装Ruby的机器中运行。</p>
+<h1 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a><strong>注意事项</strong></h1><p><code>1.9.3</code>之后的RubyInstaller不支持<code>WindowsXP</code>和<code>Windows2003</code>。如果要支持老版本Windows（公司内部很常见），请制作EXE文件时选择1.9.3版本的Ruby。</p>
+
+        
+        
+        <p class="article-more-link">
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/ruby/">ruby</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/ocra/">ocra</a><a href="/tags/exe/">exe</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+	  	<span></span>
+		<a href="/2014/11/24/use_ocra/#comments" class="ds-thread-count comments-count-link" data-thread-key="2014/11/24/use_ocra/" data-count-type="comments">&nbsp;</a>
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/11/24/uru_ruby_select/" title="在Windows下使用uru用于多个ruby的切换" itemprop="url">在Windows下使用uru用于多个ruby的切换</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://yoursite.com/about" title="张恒" target="_blank" itemprop="author">张恒</a>
+		
+  <p class="article-time">
+    <time datetime="2014-11-24T09:05:00.000Z" itemprop="datePublished"> 发表于 2014-11-24</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <h2 id="Ruby选择器"><a href="#Ruby选择器" class="headerlink" title="Ruby选择器"></a>Ruby选择器</h2><p>你还在为如何使用系统中的各个版本的Ruby而烦恼吗？Uru正是为你设计的。</p>
+<h2 id="如何使用"><a href="#如何使用" class="headerlink" title="如何使用"></a>如何使用</h2><p>很简单。</p>
+<ul>
+<li>在C盘根目录创建一个tools文件夹，然后将tools目录加入系统PATH环境变量，供命令行使用</li>
+<li>下载已经编译好的<a href="https://bitbucket.org/jonforums/uru/downloads/uru-0.7.7-windows-x86.7z" target="_blank" rel="external">二进制文件</a>，解压到tools目录中</li>
+<li><p>然后打开命令行，执行</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">C:\tools&gt;uru_rt admin install</div><div class="line">C:\tools&gt;uru_rt admin add system</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>到此安装完成。</p>
+<h2 id="增加ruby"><a href="#增加ruby" class="headerlink" title="增加ruby"></a>增加ruby</h2><p>也很简单。</p>
+<ul>
+<li>启动命令行</li>
+<li><p>增加包含ruby.exe的路径到uru中</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">uru admin add c:\Ruby193</div><div class="line">uru admin add c:\Ruby21</div></pre></td></tr></table></figure>
+</li>
+<li><p>使用<code>uru ls</code>看下当前安装了哪些ruby</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">d:\work\open_source\super-deploy-script\ocra&gt;uru ls</div><div class="line">=&gt;  193p550     : ruby 1.9.3p550 (2014-10-27) [i386-mingw32]</div><div class="line">    213p242     : ruby 2.1.3p242 (2014-09-19 revision 47630) [i386-mingw32]</div><div class="line">    system      : ruby 1.8.7 (2013-06-27 patchlevel 374) [i386-mingw32]</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="切换Ruby"><a href="#切换Ruby" class="headerlink" title="切换Ruby"></a>切换Ruby</h2><p>然后即可使用<code>uru 部分名称</code>来进行ruby的切换，比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">uru 19      # 切换到ruby 1.9.3p550</div><div class="line">---&gt; Now using ruby 1.9.3-p550 tagged as `193p550`</div><div class="line"></div><div class="line">uru 21      # 切换到ruby 2.1.3p242</div><div class="line">---&gt; Now using ruby 2.1.3-p242 tagged as `213p242`</div><div class="line"></div><div class="line">uru 2       # 切换到ruby 2.1.3p242</div><div class="line">---&gt; Now using ruby 2.1.3-p242 tagged as `213p242`</div></pre></td></tr></table></figure>
+<blockquote>
+<p>更多的文档可参考uru的<a href="https://bitbucket.org/jonforums/uru/wiki/Examples" target="_blank" rel="external">wiki</a></p>
+</blockquote>
+
+        
+        
+        <p class="article-more-link">
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/ruby/">ruby</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/ruby/">ruby</a><a href="/tags/rbenv/">rbenv</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+	  	<span></span>
+		<a href="/2014/11/24/uru_ruby_select/#comments" class="ds-thread-count comments-count-link" data-thread-key="2014/11/24/uru_ruby_select/" data-count-type="comments">&nbsp;</a>
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/10/24/simple_cov/" title="使用SimpleCov进行Ruby代码覆盖率统计" itemprop="url">使用SimpleCov进行Ruby代码覆盖率统计</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://yoursite.com/about" title="张恒" target="_blank" itemprop="author">张恒</a>
+		
+  <p class="article-time">
+    <time datetime="2014-10-24T17:32:10.000Z" itemprop="datePublished"> 发表于 2014-10-24</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <p>还在为Ruby代码的质量担心吗？<code>SimpleCov</code>来帮助你了！</p>
+<h2 id="SimpleCov是啥"><a href="#SimpleCov是啥" class="headerlink" title="SimpleCov是啥"></a>SimpleCov是啥</h2><p><code>SimpleCov</code>是一个Ruby代码覆盖率分析工具。它使用Ruby内置的代码覆盖率库，但是提供一个更清晰、简单的API用于过滤、分组、合并、格式化和显示这些数据。</p>
+<p>看看在我们项目中实际应用中的效果：</p>
+        
+        
+        <p class="article-more-link">
+          
+            <a href="/2014/10/24/simple_cov/#more">Read More</a>
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/ruby/">ruby</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/覆盖率/">覆盖率</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+	  	<span></span>
+		<a href="/2014/10/24/simple_cov/#comments" class="ds-thread-count comments-count-link" data-thread-key="2014/10/24/simple_cov/" data-count-type="comments">&nbsp;</a>
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2013/11/25/ruby_json_error/" title="ruby2.0下使用json遇到的坑" itemprop="url">ruby2.0下使用json遇到的坑</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://yoursite.com/about" title="张恒" target="_blank" itemprop="author">张恒</a>
+		
+  <p class="article-time">
+    <time datetime="2013-11-25T09:53:10.000Z" itemprop="datePublished"> 发表于 2013-11-25</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <h2 id="ruby-2-0-json的坑"><a href="#ruby-2-0-json的坑" class="headerlink" title="ruby 2.0 json的坑"></a>ruby 2.0 json的坑</h2><p>ruby2.0已经内置了对json的支持，不过在使用时遇到了一些问题。上代码：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">File.open(omsys_file, <span class="string">'r'</span>) <span class="keyword">do</span> <span class="params">|f|</span></div><div class="line">  omsys_data = JSON.parse(f.read)</div><div class="line"></div><div class="line">  converter = CawGenerator::Caw::Converter.new</div><div class="line"></div><div class="line">  ret = converter.convert(omsys_data, error_file)</div><div class="line"></div><div class="line">  File.open(out_file, <span class="string">'w'</span>) <span class="keyword">do</span> <span class="params">|f|</span></div><div class="line">    f.write(JSON.pretty_generate(ret))</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+<p>结果代码在JSON.parse的时候抛出异常了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">C:/Ruby200/lib/ruby/2.0.0/json/common.rb:155:in `encode&apos;: &quot;\xA7\x86&quot; from GBK to UTF-8 (Encoding::UndefinedConversionError)</div><div class="line">        from C:/Ruby200/lib/ruby/2.0.0/json/common.rb:155:in `initialize&apos;</div><div class="line">        from C:/Ruby200/lib/ruby/2.0.0/json/common.rb:155:in `new&apos;</div><div class="line">        from C:/Ruby200/lib/ruby/2.0.0/json/common.rb:155:in `parse&apos;</div></pre></td></tr></table></figure>
+<p>啥原因呢？从错误来看是Json无法把GBK格式编码转换为UTF-8编码。不过我已经确认过了，要打开的json格式文件确实是UTF-8格式，怎么会是GBK编码呢？</p>
+        
+        
+        <p class="article-more-link">
+          
+            <a href="/2013/11/25/ruby_json_error/#more">Read More</a>
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/ruby/">ruby</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/json/">json</a><a href="/tags/ruby/">ruby</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+	  	<span></span>
+		<a href="/2013/11/25/ruby_json_error/#comments" class="ds-thread-count comments-count-link" data-thread-key="2013/11/25/ruby_json_error/" data-count-type="comments">&nbsp;</a>
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+
+</div>
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/docker/" title="docker">docker<sup>1</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/ruby/" title="ruby">ruby<sup>6</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/web/" title="web">web<sup>1</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/ruby/" title="ruby">ruby<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/并发/" title="并发">并发<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/shell/" title="shell">shell<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/json/" title="json">json<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/clean/" title="clean">clean<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/性能/" title="性能">性能<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/gil/" title="gil">gil<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/docker/" title="docker">docker<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/覆盖率/" title="覆盖率">覆盖率<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/rbenv/" title="rbenv">rbenv<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ocra/" title="ocra">ocra<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/exe/" title="exe">exe<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/stackprof/" title="stackprof">stackprof<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/优化/" title="优化">优化<sup>1</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="linkslist">
+  <p class="asidetitle">友情链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="https://coderq.com" target="_blank" title="一个面向程序员交流分享的新一代社区">码农圈</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://www.tommylike.com" target="_blank" title="TommyLike&#39;s Blog">TommyLike&#39;s Blog</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> We code today, everyday. <br/>
+			From the code, to the code.</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://yoursite.com/about" target="_blank" title="张恒">张恒</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wecode-today"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+  </body>
+ </html>

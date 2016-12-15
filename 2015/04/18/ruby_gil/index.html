@@ -1,0 +1,616 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Ruby GIL之谜 | We code today!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="张恒">
+    
+
+    
+    <meta name="description" content="从jstorimer的博客翻译
+
+Nobody understands the GIL Part1什么是GIL提起Ruby的多线程，就不得不说Ruby里面的GIL。GIL全称是Global Interpreter Lock（全局解释器锁），那么GIL到底是啥呢？
+1MRI有一个全局的解释器锁。它用于锁住Ruby代码的执行。这意味着在一个多线程环境中，在同一个时间，只有一个线程能够执行Ruby代码">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ruby GIL之谜">
+<meta property="og:url" content="http://yoursite.com/2015/04/18/ruby_gil/index.html">
+<meta property="og:site_name" content="We code today!">
+<meta property="og:description" content="从jstorimer的博客翻译
+
+Nobody understands the GIL Part1什么是GIL提起Ruby的多线程，就不得不说Ruby里面的GIL。GIL全称是Global Interpreter Lock（全局解释器锁），那么GIL到底是啥呢？
+1MRI有一个全局的解释器锁。它用于锁住Ruby代码的执行。这意味着在一个多线程环境中，在同一个时间，只有一个线程能够执行Ruby代码">
+<meta property="og:image" content="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/19/append_base_grande.png">
+<meta property="og:image" content="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/19/append_arrows_grande.png">
+<meta property="og:image" content="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/24/pre-gil_2_medium.png">
+<meta property="og:image" content="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/24/with-gil_medium.png">
+<meta property="og:image" content="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/24/sleeping-timer_large.png">
+<meta property="og:updated_time" content="2016-12-15T06:53:55.184Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Ruby GIL之谜">
+<meta name="twitter:description" content="从jstorimer的博客翻译
+
+Nobody understands the GIL Part1什么是GIL提起Ruby的多线程，就不得不说Ruby里面的GIL。GIL全称是Global Interpreter Lock（全局解释器锁），那么GIL到底是啥呢？
+1MRI有一个全局的解释器锁。它用于锁住Ruby代码的执行。这意味着在一个多线程环境中，在同一个时间，只有一个线程能够执行Ruby代码">
+<meta name="twitter:image" content="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/19/append_base_grande.png">
+
+    
+    
+    <link rel="icon" href="/img/favicon.png">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="We code today!">We code today!</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">Home</a></li>
+					
+						<li><a href="/archives">Archives</a></li>
+					
+						<li><a href="/about">About</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/04/18/ruby_gil/" title="Ruby GIL之谜" itemprop="url">Ruby GIL之谜</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="http://yoursite.com/about" title="张恒" target="_blank" itemprop="author">张恒</a>
+		
+  <p class="article-time">
+    <time datetime="2015-04-18T21:44:00.000Z" itemprop="datePublished"> 发表于 2015-04-18</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Nobody-understands-the-GIL-Part1"><span class="toc-number">1.</span> <span class="toc-text">Nobody understands the GIL Part1</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是GIL"><span class="toc-number">1.1.</span> <span class="toc-text">什么是GIL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#问题"><span class="toc-number">1.2.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#往数组中增加数据不是线程安全的"><span class="toc-number">1.3.</span> <span class="toc-text">往数组中增加数据不是线程安全的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#多线程如何破坏数据"><span class="toc-number">1.4.</span> <span class="toc-text">多线程如何破坏数据</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#都是调度器的错！"><span class="toc-number">1.5.</span> <span class="toc-text">都是调度器的错！</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#GIL也是一把锁"><span class="toc-number">1.6.</span> <span class="toc-text">GIL也是一把锁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Nobody-understands-the-GIL-Part2"><span class="toc-number">2.</span> <span class="toc-text">Nobody understands the GIL Part2</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#从头说起"><span class="toc-number">2.1.</span> <span class="toc-text">从头说起</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#定时器线程"><span class="toc-number">2.2.</span> <span class="toc-text">定时器线程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#处理中断标志"><span class="toc-number">2.3.</span> <span class="toc-text">处理中断标志</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#非原生方法"><span class="toc-number">2.4.</span> <span class="toc-text">非原生方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#这意味着啥？"><span class="toc-number">2.5.</span> <span class="toc-text">这意味着啥？</span></a></li></ol></li></ol>
+		
+		</div>
+		
+		<blockquote>
+<p>从<a href="http://www.jstorimer.com/blogs/workingwithcode/8085491-nobody-understands-the-gil" target="_blank" rel="external">jstorimer</a>的博客翻译</p>
+</blockquote>
+<h1 id="Nobody-understands-the-GIL-Part1"><a href="#Nobody-understands-the-GIL-Part1" class="headerlink" title="Nobody understands the GIL Part1"></a>Nobody understands the GIL Part1</h1><h2 id="什么是GIL"><a href="#什么是GIL" class="headerlink" title="什么是GIL"></a>什么是GIL</h2><p>提起Ruby的多线程，就不得不说Ruby里面的GIL。GIL全称是<code>Global Interpreter Lock</code>（全局解释器锁），那么GIL到底是啥呢？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">MRI有一个全局的解释器锁。它用于锁住Ruby代码的执行。这意味着在一个多线程环境中，在同一个时间，只有一个线程能够执行Ruby代码。</div></pre></td></tr></table></figure>
+<p>因此，如果你有8个线程，工作在一个8核的CPU机器上，在任何时间中，只有一个线程能够在其中一个核上运行（不过这个不一定表示每次都运行在同一个核心上）。GIL用于保护Ruby内部，用于防止产生竞争环境(race condition)，进而导致数据损坏。</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><h2 id="往数组中增加数据不是线程安全的"><a href="#往数组中增加数据不是线程安全的" class="headerlink" title="往数组中增加数据不是线程安全的"></a>往数组中增加数据不是线程安全的</h2><p>在Ruby中，只有很少的操作默认是线程安全的。比如，往数组中增加元素：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">array = []</div><div class="line"></div><div class="line"><span class="number">5</span>.times.map <span class="keyword">do</span></div><div class="line">  Thread.new <span class="keyword">do</span></div><div class="line">    <span class="number">1000</span>.times <span class="keyword">do</span></div><div class="line">      array &lt;&lt; <span class="literal">nil</span></div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span>.each(&amp;<span class="symbol">:join</span>)</div><div class="line"></div><div class="line">puts array.size</div></pre></td></tr></table></figure>
+<p>这里有5个线程共享1个数组对象。每个线程往数组里面<code>push</code>1000次<code>nil</code>。所以到最后，数组里面应该有5000个nil，是吧？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ ruby pushing_nil.rb</div><div class="line">5000</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ jruby pushing_nil.rb</div><div class="line">4446</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ rbx pushing_nil.rb</div><div class="line">3088</div></pre></td></tr></table></figure>
+<p>这么一个简单地例子，已经暴露出Ruby的一个操作不是线程安全的。在这里到底发生了什么？</p>
+<a id="more"></a>
+<p>请注意MRI实现产生了正确的结果 5000 。JRuby和Rubinius产生了错误的结果。如果你重新运行脚本，你可能会发现MRI再一次返回正确结果，但是JRuby和Rubinius产生了不同的错误结果。    </p>
+<p>结果不一致的原因就是应为GIL。因为MRI有GIL，虽然说有5个线程都在运行，实际上一次只有一个线程是活动的。换句话说，执行不是并行的。JRuby和Rubinius因为没有GIL，当你有5个线程在运行时，你真的有5个线程同时在所有的CPU核心上运行！</p>
+<p>在那些支持并行的Ruby实现上，5个线程都进入运行线程不安全的代码。它们相互影响，最终导致破坏底层数据。</p>
+<h2 id="多线程如何破坏数据"><a href="#多线程如何破坏数据" class="headerlink" title="多线程如何破坏数据"></a>多线程如何破坏数据</h2><p>怎么会这样呢？Ruby不是程序员最好的朋友吗？我会给你展示一些基于高阶解释的技术细节，也会给你展示这个从技术上来说是可能的。</p>
+<p>当你使用MRI,JRuby,Rubinius的时候，不同的Ruby实现采用了不同的语言。MRI是C语言写的，JRuby使用Java编写，Rubinius是使用Ruby和C++混合实现的。因此当你有如下的Ruby语句：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">array &lt;&lt; <span class="literal">nil</span></div></pre></td></tr></table></figure>
+<p>这条语句会转换为几十上百条底层代码。以MRI的<code>Array#&lt;&lt;</code>方法为例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function">VALUE</span></div><div class="line"><span class="title">rb_ary_push</span><span class="params">(VALUE ary, VALUE item)</span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">long</span> idx = RARRAY_LEN(ary);</div><div class="line"></div><div class="line">    ary_ensure_room_for_push(ary, <span class="number">1</span>);</div><div class="line">    RARRAY_ASET(ary, idx, item);</div><div class="line">    ARY_SET_LEN(ary, idx + <span class="number">1</span>);</div><div class="line">    <span class="keyword">return</span> ary;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>请注意：这里至少有 <strong>4条底层操作</strong> 。</p>
+<ol>
+<li>获取当前数组的长度。</li>
+<li>检查数组中是否有空间用于插入新数据</li>
+<li>将新数据附加到数组</li>
+<li>设定数组的长度为旧长度+1</li>
+</ol>
+<p>每条这种操作又会调用其他函数或者宏。我会将这个的目的是，给你看看多线程是如何损坏数据的。在单线程环境中，你可以看看这段C代码，并且可以很容易地跟踪函数的执行路径。换句话说，我们已经习惯了通过代码以线性的方式，推理整个’世界’的状态。这就是我们通常编写代码的方式。</p>
+<p>当涉及多个线程，这不再是可能的了。当有两个线程，每个线程通过代码跟踪其自己的路径。现在，你必须保持2 （或以上）的’指针’，指向每个正在执行的线程。因为线程共享相同的内存空间（同一个进程中），两个线程可同时改变“世界”的状态。</p>
+<p>一个线程中断另一个线程的执行，改变了另外一个线程的内部状态，然后另外的线程继续执行，完全不知道的事物的状态发生了变化。这种情况是完全可能的。</p>
+<p>这就是为什么一些Ruby实现，往数组中简单地附加数据也会产生错误结果的原因。请看下图：</p>
+<p>这里是我们的初始系统状态。</p>
+<p><img src="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/19/append_base_grande.png" alt="append_base"></p>
+<p>这里有两个活动线程，同时进入了这个函数。考虑第1-4步是这个函数(<code>Array#&lt;&lt;</code>)实现的伪代码。一旦两个线程都进入这个函数，这里是一个可能出现的执行顺序，以线程A开始。</p>
+<p><img src="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/19/append_arrows_grande.png" alt="append_arrows_grande"></p>
+<p>这个看起来有些复杂，但是只需要跟着箭头指向的顺序来了解这里发生了什么。在每个步骤上，我增加了小标签，用于从每个线程的角度来显示状态变化。</p>
+<p>这只是其中一种可能的执行序列。</p>
+<p>在此发生的是：线程A开始按顺序路径执行此函数，不过当它执行到第三步的时候，它遇到了上下文切换。因此线程A就在此地方暂停执行。此时线程B开始执行，它执行完整个函数，将元素附加到数组末尾并增加数组长度属性。</p>
+<p>一旦线程B执行完成，线程A恢复上下文，从中断的地方继续执行。记住，线程A在增加长度属性之前被暂停，因此它继续执行并增加数组长度。只不过它并不知道线程B在它的眼皮子底下修改了状态。</p>
+<p>线程B将长度设置为1，然后线程A将长度设置为1，两个都已经将元素附加到数组末尾。数据就这样被破坏掉了，这个事件顺序就是导致JRuby或者Rubinius结果不正确的原因。</p>
+<p>除此之外，在JRuby和Rubinius中，通常还有更为复杂的情况并发执行。在这种情况下，一个线程被暂停后，同时并行运行的其他线程，所有的线程都有可能在同一时间处理数据。</p>
+<p>如果你重复执行测试脚本，你会发现不正确的结果每次都不相同。这里线程切换是 <strong>非确定性的，不可预知的</strong> ，它完全有可能发生在函数执行前，执行后，或者没啥关系。</p>
+<p><strong>那为啥Ruby不帮我们搞定这些事情呢？</strong> 其他编程语言的数组同理也不提供线程安全保障：代价太昂贵了。其他Ruby实现要提供线程安全的数据结构是可能的，但是会导致额外的开销，最终导致单线程程序执行变慢。而开发者的责任就是在需要的时候保证线程安全。</p>
+<p>那么问题来了，线程安全哪家强？Ruby实现找蓝翔…………</p>
+<p>如果这样的线程切换是可能的，那为什么MRI能够输出正确的结果呢？这个线程切换又到底是啥鬼东西？(ˇˍˇ） 想～)</p>
+<p>问题1就是我写这篇文章的原因。对于GIL的高阶理解是无法回答这个问题的。高阶理解只能知道一个时间只有一个线程在执行。但是当上下文切换在Ruby函数执行中发生的时候，会发生啥？什么是GIL语义？</p>
+<p>但是首先……</p>
+<h2 id="都是调度器的错！"><a href="#都是调度器的错！" class="headerlink" title="都是调度器的错！"></a>都是调度器的错！</h2><p>上下文切换来自于操作系统的线程调度器。在所有的Ruby实现中，一个Ruby线程对应一个操作系统原生线程。操作系统保证没有一个线程会把系统的所有资源（比如CPU时间片）全部吃完，因此操作系统实现了线程的调度器，用于在各个线程中公平分配资源。</p>
+<p>这表现为一系列的暂停和恢复。每个线程都有机会用于占用一个时间片资源，然后它被暂停并记录上下文，其他线程就有它们的机会执行。随着时间的推移，这个线程将被恢复执行，如此反复。</p>
+<p>这对于操作系统来说是很有效的，不过给你的程序带来了一定程度上的随机性。例如<code>Array#&lt;&lt;</code>方法就需要察觉它可能在任何时间被暂停，然后另外的线程并行执行同样的操作，在它的眼皮底下修改’整个世界’的状态。</p>
+<p><strong>怎么办？将操作原子化。</strong></p>
+<p>如果你需要确保操作不被中断，那么需要将操作原子化。如此你就确保在操作完成之前不会被中断。这样就可以防止我们前面例子的第三步，最终当它恢复执行第4步的时候，防止损坏数据。</p>
+<p>原子化操作最简单的方式就是使用锁。以下代码确保在MRI，JRuby和Rubinius上都可以输出正确结果。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">array = []</div><div class="line">mutex = Mutex.new</div><div class="line"></div><div class="line"><span class="number">5</span>.times.map <span class="keyword">do</span></div><div class="line">  Thread.new <span class="keyword">do</span></div><div class="line"></div><div class="line">    mutex.synchronize <span class="keyword">do</span></div><div class="line">      <span class="number">1000</span>.times <span class="keyword">do</span></div><div class="line">        array &lt;&lt; <span class="literal">nil</span></div><div class="line">      <span class="keyword">end</span></div><div class="line">    <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span>.each(&amp;<span class="symbol">:join</span>)</div><div class="line"></div><div class="line">puts array.size</div></pre></td></tr></table></figure>
+<p>这段代码使用了一个共享互斥量或者锁来确保执行结果正确。一旦一个线程进入了<code>mutex.synchronize</code>代码块，其他所有线程必须等到当前线程将代码块执行完成后，才能进入同样地代码。通过将操作原子化，你确保了在代码块里即使发生了上下文切换，其他线程也无法进入同样的代码。线程调度器可以看到这个，将调度重新切换到其他线程上。这同时也确保了其他线程无法修改’世界状态’。这就是线程安全。</p>
+<h2 id="GIL也是一把锁"><a href="#GIL也是一把锁" class="headerlink" title="GIL也是一把锁"></a>GIL也是一把锁</h2><p>我已经给你展示了如何使用锁来将操作原子化，并提供线程安全保证。GIL也是一个锁，那么它确保了你的所有Ruby代码都是线程安全的吗？它确保<code>Array#&lt;&lt;</code>操作原子化吗？</p>
+<h1 id="Nobody-understands-the-GIL-Part2"><a href="#Nobody-understands-the-GIL-Part2" class="headerlink" title="Nobody understands the GIL Part2"></a>Nobody understands the GIL Part2</h1><p>在第一部分我们留下了2个问题:</p>
+<ol>
+<li>GIL确保<code>array &lt;&lt; nil</code>是原子操作吗？</li>
+<li>GIL确保你的Ruby代码线程安全吗？</li>
+</ol>
+<p>第一个操作我们通过查看源代码来解决。</p>
+<p>回忆一下上次的代码片段：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">array = []</div><div class="line"></div><div class="line"><span class="number">5</span>.times.map <span class="keyword">do</span></div><div class="line">  Thread.new <span class="keyword">do</span></div><div class="line">    <span class="number">1000</span>.times <span class="keyword">do</span></div><div class="line">      array &lt;&lt; <span class="literal">nil</span></div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span>.each(&amp;<span class="symbol">:join</span>)</div><div class="line"></div><div class="line">puts array.size</div></pre></td></tr></table></figure>
+<p>如果你假设数组是线程安全的，那么期望的结果应该是5000。但是由于数组不是线程安全的，因此JRuby和Rubinius产生了一个非预期的结果–小于5000。这就是多个线程的上下文切换导致损坏数据的原因。</p>
+<p><strong>MRI产生了预期结果，但它是侥幸还是担保呢？</strong> 我们通过查看Ruby的源代码片段来学习：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Thread.new <span class="keyword">do</span></div><div class="line">  array &lt;&lt; <span class="literal">nil</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+<h2 id="从头说起"><a href="#从头说起" class="headerlink" title="从头说起"></a>从头说起</h2><p>要知道这段代码内部发生了啥，我们需要看看MRI是如何启动线程的。我们会查看MRI源代码的<a href="https://github.com/ruby/ruby/blob/trunk/thread.c" target="_blank" rel="external">thread.c</a>文件。</p>
+<p>第一段开始的代码<code>Thread.new</code>是启动了一个原生线程来支撑ruby线程。启动线程的函数是<code>thread_start_func_2</code>。我们从大的方向来看看这个函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span></span></div><div class="line"><span class="title">thread_start_func_2</span><span class="params">(<span class="keyword">rb_thread_t</span> *th, VALUE *stack_start, VALUE *register_stack_start)</span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">int</span> state;</div><div class="line">    VALUE args = th-&gt;first_args;</div><div class="line">    <span class="keyword">rb_proc_t</span> *proc;</div><div class="line">    <span class="keyword">rb_thread_list_t</span> *join_list;</div><div class="line">    <span class="keyword">rb_thread_t</span> *main_th;</div><div class="line">    VALUE errinfo = Qnil;</div><div class="line">    <span class="keyword">if</span> (th == th-&gt;vm-&gt;main_thread)</div><div class="line">  </div><div class="line">    ruby_thread_set_native(th);</div><div class="line"></div><div class="line">    th-&gt;machine.stack_start = stack_start;</div><div class="line">    thread_debug(<span class="string">"thread start: %p\n"</span>, (<span class="keyword">void</span> *)th);</div><div class="line"></div><div class="line">    gvl_acquire(th-&gt;vm, th);    <span class="comment">// **获取GIL锁**</span></div><div class="line">    &#123;</div><div class="line">      thread_debug(<span class="string">"thread start (get lock): %p\n"</span>, (<span class="keyword">void</span> *)th);</div><div class="line">      rb_thread_set_current(th);    <span class="comment">// **设定当前线程**</span></div><div class="line"></div><div class="line">      TH_PUSH_TAG(th);</div><div class="line">      <span class="keyword">if</span> ((state = EXEC_TAG()) == <span class="number">0</span>) &#123;</div><div class="line">          SAVE_ROOT_JMPBUF(th, &#123;</div><div class="line">                    native_set_thread_name(th);</div><div class="line">        <span class="keyword">if</span> (!th-&gt;first_func) &#123;</div><div class="line">            GetProcPtr(th-&gt;first_proc, proc);</div><div class="line">            th-&gt;errinfo = Qnil;</div><div class="line">            th-&gt;root_lep = rb_vm_ep_local_ep(proc-&gt;block.ep);</div><div class="line">            th-&gt;root_svar = Qnil;</div><div class="line">            EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th-&gt;self, <span class="number">0</span>, <span class="number">0</span>, Qundef);</div><div class="line">            th-&gt;value = rb_vm_invoke_proc(th, proc, (<span class="keyword">int</span>)RARRAY_LEN(args), RARRAY_CONST_PTR(args), <span class="number">0</span>);  <span class="comment">// 执行线程代码块</span></div><div class="line">            EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th-&gt;self, <span class="number">0</span>, <span class="number">0</span>, Qundef);</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span> &#123;</div><div class="line">            th-&gt;value = (*th-&gt;first_func)((<span class="keyword">void</span> *)args);</div><div class="line">        &#125;</div><div class="line">          &#125;);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">else</span> &#123;</div><div class="line">        ...</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      th-&gt;status = THREAD_KILLED;</div><div class="line">      thread_debug(<span class="string">"thread end: %p\n"</span>, (<span class="keyword">void</span> *)th);</div><div class="line"></div><div class="line">      main_th = th-&gt;vm-&gt;main_thread;</div><div class="line">      <span class="keyword">if</span> (main_th == th) &#123;</div><div class="line">          ruby_stop(<span class="number">0</span>);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">if</span> (RB_TYPE_P(errinfo, T_OBJECT)) &#123;</div><div class="line">          <span class="comment">/* treat with normal error object */</span></div><div class="line">          rb_threadptr_raise(main_th, <span class="number">1</span>, &amp;errinfo);</div><div class="line">      &#125;</div><div class="line">      TH_POP_TAG();</div><div class="line"></div><div class="line">      <span class="comment">/* locking_mutex must be Qfalse */</span></div><div class="line">      <span class="keyword">if</span> (th-&gt;locking_mutex != Qfalse) &#123;</div><div class="line">          rb_bug(<span class="string">"thread_start_func_2: locking_mutex must not be set (%p:%"</span>PRIxVALUE<span class="string">")"</span>,</div><div class="line">           (<span class="keyword">void</span> *)th, th-&gt;locking_mutex);</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      <span class="comment">/* delete self other than main thread from living_threads */</span></div><div class="line">      rb_vm_living_threads_remove(th-&gt;vm, th);</div><div class="line">      <span class="keyword">if</span> (rb_thread_alone()) &#123;</div><div class="line">          <span class="comment">/* I'm last thread. wake up main thread from rb_thread_terminate_all */</span></div><div class="line">          rb_threadptr_interrupt(main_th);</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      <span class="comment">/* wake up joining threads */</span></div><div class="line">      join_list = th-&gt;join_list;</div><div class="line">      <span class="keyword">while</span> (join_list) &#123;</div><div class="line">          rb_threadptr_interrupt(join_list-&gt;th);</div><div class="line">          <span class="keyword">switch</span> (join_list-&gt;th-&gt;status) &#123;</div><div class="line">            <span class="keyword">case</span> THREAD_STOPPED: <span class="keyword">case</span> THREAD_STOPPED_FOREVER:</div><div class="line">        join_list-&gt;th-&gt;status = THREAD_RUNNABLE;</div><div class="line">            <span class="keyword">default</span>: <span class="keyword">break</span>;</div><div class="line">          &#125;</div><div class="line">          join_list = join_list-&gt;next;</div><div class="line">      &#125;</div><div class="line"></div><div class="line">      rb_threadptr_unlock_all_locking_mutexes(th);</div><div class="line">      rb_check_deadlock(th-&gt;vm);</div><div class="line"></div><div class="line">      <span class="keyword">if</span> (!th-&gt;root_fiber) &#123;</div><div class="line">          rb_thread_recycle_stack_release(th-&gt;<span class="built_in">stack</span>);</div><div class="line">          th-&gt;<span class="built_in">stack</span> = <span class="number">0</span>;</div><div class="line">      &#125;</div><div class="line">    &#125;</div><div class="line">    native_mutex_lock(&amp;th-&gt;vm-&gt;thread_destruct_lock);</div><div class="line">    <span class="comment">/* make sure vm-&gt;running_thread never point me after this point.*/</span></div><div class="line">    th-&gt;vm-&gt;running_thread = <span class="literal">NULL</span>;</div><div class="line">    native_mutex_unlock(&amp;th-&gt;vm-&gt;thread_destruct_lock);</div><div class="line">    thread_cleanup_func(th, FALSE);</div><div class="line">    gvl_release(th-&gt;vm);  <span class="comment">// **释放GIL**</span></div><div class="line"></div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这个函数中有很多代码，不过我们着重看加了注释的部分。在顶部，这个新线程会获取GIL。记住，这个线程在实际拿到GIL之前，都是空闲的。在代码中间，它调用你传给线程的代码块。在完成这些之后，它释放GIL并退出原生线程。</p>
+<p>在我们的代码片段里，这个新线程是由主线程启动的。基于这个情况，我们可以假设主线程当前持有GIL。在主线程释放GIL之前，这个新线程只能等待。</p>
+<p>我们看看当这个新线程想要获取GIL时发生了啥(Linux平台)：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span></span></div><div class="line"><span class="title">gvl_acquire_common</span><span class="params">(<span class="keyword">rb_vm_t</span> *vm)</span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">if</span> (vm-&gt;gvl.acquired) &#123;</div><div class="line">        vm-&gt;gvl.waiting++;</div><div class="line">        <span class="keyword">if</span> (vm-&gt;gvl.waiting == <span class="number">1</span>) &#123;</div><div class="line">            <span class="comment">/*</span></div><div class="line">             * Wake up timer thread iff timer thread is slept.</div><div class="line">             * When timer thread is polling mode, we don't want to</div><div class="line">             * make confusing timer thread interval time.</div><div class="line">             */</div><div class="line">            rb_thread_wakeup_timer_thread_low();</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="keyword">while</span> (vm-&gt;gvl.acquired) &#123;</div><div class="line">            native_cond_wait(&amp;vm-&gt;gvl.cond, &amp;vm-&gt;gvl.lock);</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        vm-&gt;gvl.waiting--;</div><div class="line"></div><div class="line">        <span class="keyword">if</span> (vm-&gt;gvl.need_yield) &#123;</div><div class="line">            vm-&gt;gvl.need_yield = <span class="number">0</span>;</div><div class="line">            native_cond_signal(&amp;vm-&gt;gvl.switch_cond);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    vm-&gt;gvl.acquired = <span class="number">1</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这个是Linux平台上的<code>gvl_acquire_common</code>函数。这个函数被<code>gvl_acquire</code>函数调用，用于获取GIL。</p>
+<p>首先它检查当前是否已经获取了GIL。如果是，那么就增加GIL的waiting属性。对于我们的执行代码来说，这个值现在应该是1。下面的代码用于检查等待值是否为1.如果是，下一行代码就触发定时器线程的唤醒。</p>
+<p>定时器线程是MRI的秘密武器，用于MRI线程系统的顺畅，并防止任何一个线程长时间占用GIL。但在此之前，我们不要跑那么快，先让说明GIL的一些信息，再介绍该定时器线程。</p>
+<p><img src="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/24/pre-gil_2_medium.png" alt="pre-gil_2_medium"><br>我已经说过，MRI线程对应一个原生操作系统线程。但是这张图表示每个MRI线程是在它的原生线程上并行执行的。GIL防止了这个。我们需要将GIL加入到图中，将图标变得更为现实。</p>
+<p><img src="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/24/with-gil_medium.png" alt="with-gil_medium"></p>
+<p>当Ruby线程想在它的原生线程里面执行代码时，它必须要首先获取GIL。**GIL作为Ruby线程和底层原生线程的中间者，严重降低了并行！在前一张图中，多个Ruby线程和其底层的原生线程都是并行执行的。第二张图更接近于MRI，在任何时间，只有一个线程能够获取到GIL，因此MRI中并行执行代码完全被禁止。</p>
+<p><strong>根据MRI开发组成员的说法，GIL保护了系统内部状态。</strong> 由于有GIL，它们不需要显示获取锁，或者对内部数据进行同步。如果两个线程无法同时修改内部状态，那么就不存在竞争环境。</p>
+<p>对于开发者，这会严重限制你的代码在MRI上无法并行执行。</p>
+<h2 id="定时器线程"><a href="#定时器线程" class="headerlink" title="定时器线程"></a>定时器线程</h2><p>我已经说过了，定时器线程是用于防止其他线程霸占GIL的。定时器线程是MRI的一个内部原生线程，它没有关联的Ruby线程。定时器线程由MRI函数<code>rb_thread_create_timer_thread</code>方法启动。</p>
+<p>当MRI启动后只有主线程在运行时，定时器线程处于睡眠状态。但记住，一旦一个线程开始等待GIL，它就唤醒定时器线程。</p>
+<p><img src="http://7vzu7z.com1.z0.glb.clouddn.com/2015/4/24/sleeping-timer_large.png" alt="sleeping-timer_large"></p>
+<p>这个更接近于MRI中GIL的实现方式。右上角的线程是我们新创建的。由于它是当前唯一要获取GIL的线程，它唤醒了定时器线程。</p>
+<p>定时器线程防止GIL被霸占。每100毫秒，定时器线程都给当前占用GIL的线程设定一个中断，通过<code>RUBY_VM_SET_TIMER_INTERRUPT</code>宏。这里的细节很重要，应为它会给我们解释<code>array &lt;&lt; nil</code>是否是原子操作。</p>
+<p>如果你熟悉时间片的概念，这个很类似。</p>
+<p>每100毫秒定时器线程都会给持有GIL的线程设定一个中断标识。设定中断标志并不是一定要真正中断线程的执行。</p>
+<h2 id="处理中断标志"><a href="#处理中断标志" class="headerlink" title="处理中断标志"></a>处理中断标志</h2><p>在<code>vm_eval.c</code>文件中，有Ruby如何调用方法的代码。它负责设定方法调用的上下文环境，并调用正确的方法。在<code>vm_call0_body</code>函数最后，在返回函数调用值之前，中断被检查。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">static</span> VALUE</span></div><div class="line"><span class="title">vm_call0_body</span><span class="params">(<span class="keyword">rb_thread_t</span>* th, <span class="keyword">rb_call_info_t</span> *ci, <span class="keyword">const</span> VALUE *argv)</span></div><div class="line">&#123;</div><div class="line">  VALUE ret;</div><div class="line"> </div><div class="line">  success:</div><div class="line">    RUBY_VM_CHECK_INTS(th);</div><div class="line">  <span class="keyword">return</span> ret;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>如果中断标志已经被设定，那么它在这个店停止执行，在返回函数调用值之前。在执行任何其他Ruby代码之前，当前线程会释放GIL，并调用<code>sched_yield</code>方法。<code>sched_yield</code>方法是系统方法，用于将线程调度器调度到其他线程上。一旦这个操作完成，被中断的线程尝试重新获取GIL，等待其他线程释放GIL。</p>
+<p>好了，这就是我们的答案。<code>aray &lt;&lt; nil</code>是原子的。感谢GIL，所有的C实现的Ruby方法都是原子操作。</p>
+<p>因此这个例子：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">array = []</div><div class="line"></div><div class="line"><span class="number">5</span>.times.map <span class="keyword">do</span></div><div class="line">  Thread.new <span class="keyword">do</span></div><div class="line">    <span class="number">1000</span>.times <span class="keyword">do</span></div><div class="line">      array &lt;&lt; <span class="literal">nil</span></div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span>.each(&amp;<span class="symbol">:join</span>)</div><div class="line"></div><div class="line">puts array.size</div></pre></td></tr></table></figure>
+<p>保证每次在MRI上执行，都会产生正确的结果。</p>
+<p><strong>但是记住这个保证在其他Ruby实现上是没有的。</strong> 如果你将这个代码拿到其他没有GIL的Ruby实现上运行，就会产生一个非预期的结果。知道GIL的保证是好事，不过编写基于GIL的代码不是个好主意。如果你这样做，你的代码就只能在MRI的环境上运行了。</p>
+<p>同样的，GIL不是一个公开的API。它没有文档也没有规格。当前有Ruby代码隐式依赖于GIL，但是MRI开发组提到以后会去掉GIL，或者改变它的语义。基于这些原因，你不应该编写基于当前GIL行为的Ruby代码。</p>
+<h2 id="非原生方法"><a href="#非原生方法" class="headerlink" title="非原生方法"></a>非原生方法</h2><p>我倒现在说的都是<code>array &lt;&lt; nil</code>是原子的。这个很简单，因为<code>Array#&lt;&lt;</code>方法获取一个参数为产量值(<code>nil</code>)，而且在这个表达式里面只有一个方法调用，用C开发。即使在代码中中断，它也会继续执行到结束，并释放GIL。</p>
+<p>那下面的代码呢？</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">array &lt;&lt; User.find(<span class="number">1</span>)</div></pre></td></tr></table></figure>
+<p>如果<code>Array#&lt;&lt;</code>方法能够执行，那么它必须要先计算<code>User.find(1)</code>的值。你知道，在Rails中，<code>User.find(1)</code>在它的实现里会调用一大堆Ruby代码。</p>
+<p>因此，用Ruby代码实现的方法就没有MRI的原子操作保证了。只有用C写的代码才有这个保证。</p>
+<p>那么，这是否意味着<code>Array#&lt;&lt;</code>在上面的代码中任然是原子的？是的，但是仅限于它右边的值已经被计算过了。换句话说，<code>User.find(1)</code>方法调用没有原子性保障。它的执行结果值会作为参数传递给<code>Array#&lt;&lt;</code>，而这个操作有原子性保障。</p>
+<h2 id="这意味着啥？"><a href="#这意味着啥？" class="headerlink" title="这意味着啥？"></a>这意味着啥？</h2><p>GIL将方法调用原子化了。这对你意味着啥？</p>
+<p>在第一部分中，我给你展示了在一段C函数中间执行时进行上下文切换的情况。有了GIL，这种情况就不可能了。如果线程切换发生了，其他的线程会保持空闲状态等待GIL，让当前的线程有机会不被中断继续执行。这个行为只在MRI中，C编写的Ruby代码才有。</p>
+<p>这个行为消除了MRI中很多可能发生的竞争环境。从这个角度来说，GIL是MRI的一个严格内部实现。它保持了MRI的安全性。</p>
+<p>但是还有一个问题没有得到回答。GIL是否保证了你编写的所有Ruby代码线程安全？</p>
+<p>我们在第三篇里面会回答这个问题。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/ruby/">ruby</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/gil/">gil</a><a href="/tags/并发/">并发</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://yoursite.com/2015/04/18/ruby_gil/" data-title="Ruby GIL之谜 | We code today!" data-tsina="undefined" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/05/02/scchelv/" title="四川车侣网优化分析">
+  <strong>上一篇：</strong><br/>
+  <span>
+  四川车侣网优化分析</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/12/13/topomatch_stackprof/"  title="拓扑映射还能再快吗？">
+ <strong>下一篇：</strong><br/> 
+ <span>拓扑映射还能再快吗？
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section id="comments" class="comment">
+	<div class="ds-thread" data-thread-key="2015/04/18/ruby_gil/" data-title="Ruby GIL之谜" data-url="http://yoursite.com/2015/04/18/ruby_gil/"></div>
+</section>
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Nobody-understands-the-GIL-Part1"><span class="toc-number">1.</span> <span class="toc-text">Nobody understands the GIL Part1</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是GIL"><span class="toc-number">1.1.</span> <span class="toc-text">什么是GIL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#问题"><span class="toc-number">1.2.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#往数组中增加数据不是线程安全的"><span class="toc-number">1.3.</span> <span class="toc-text">往数组中增加数据不是线程安全的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#多线程如何破坏数据"><span class="toc-number">1.4.</span> <span class="toc-text">多线程如何破坏数据</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#都是调度器的错！"><span class="toc-number">1.5.</span> <span class="toc-text">都是调度器的错！</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#GIL也是一把锁"><span class="toc-number">1.6.</span> <span class="toc-text">GIL也是一把锁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Nobody-understands-the-GIL-Part2"><span class="toc-number">2.</span> <span class="toc-text">Nobody understands the GIL Part2</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#从头说起"><span class="toc-number">2.1.</span> <span class="toc-text">从头说起</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#定时器线程"><span class="toc-number">2.2.</span> <span class="toc-text">定时器线程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#处理中断标志"><span class="toc-number">2.3.</span> <span class="toc-text">处理中断标志</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#非原生方法"><span class="toc-number">2.4.</span> <span class="toc-text">非原生方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#这意味着啥？"><span class="toc-number">2.5.</span> <span class="toc-text">这意味着啥？</span></a></li></ol></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/docker/" title="docker">docker<sup>1</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/ruby/" title="ruby">ruby<sup>6</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/web/" title="web">web<sup>1</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/ruby/" title="ruby">ruby<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/并发/" title="并发">并发<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/shell/" title="shell">shell<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/json/" title="json">json<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/clean/" title="clean">clean<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/性能/" title="性能">性能<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/gil/" title="gil">gil<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/docker/" title="docker">docker<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/覆盖率/" title="覆盖率">覆盖率<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/rbenv/" title="rbenv">rbenv<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/ocra/" title="ocra">ocra<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/exe/" title="exe">exe<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/stackprof/" title="stackprof">stackprof<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/优化/" title="优化">优化<sup>1</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="linkslist">
+  <p class="asidetitle">友情链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="https://coderq.com" target="_blank" title="一个面向程序员交流分享的新一代社区">码农圈</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://www.tommylike.com" target="_blank" title="TommyLike&#39;s Blog">TommyLike&#39;s Blog</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> We code today, everyday. <br/>
+			From the code, to the code.</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="http://yoursite.com/about" target="_blank" title="张恒">张恒</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#nothing"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"wecode-today"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+  </body>
+</html>
