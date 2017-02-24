@@ -1,0 +1,38 @@
+# Deploy hexo site by travis-ci
+# https://github.com/jkeylu/deploy-hexo-site-by-travis-ci
+# LICENSE: MIT
+#
+# 1. Copy this file to the root of your repository, then rename it to '.travis.yml'
+# 2. Replace 'YOUR NAME' and 'YOUR EMAIL' at line 29
+# 3. Add an Environment Variable 'DEPLOY_REPO'
+#     1. Generate github access token on https://github.com/settings/applications#personal-access-tokens
+#     2. Add an Environment Variable on https://travis-ci.org/{github username}/{repository name}/settings/env_vars
+#         Variable Name: DEPLOY_REPO
+#         Variable Value: https://{githb access token}@github.com/{github username}/{repository name}.git 
+#         Example: DEPLOY_REPO=https://6b75cfe9836f56e6d21187622730889874476c23@github.com/jkeylu/test-hexo-on-travis-ci.git
+
+language: node_js
+
+node_js:
+- 6.9.2
+
+branches:
+  only:
+  - master
+
+before_install:
+- npm install -g hexo-cli
+
+install:
+- npm install
+
+before_script:
+- git config --global user.name 'asiazhang.zhangheng'
+- git config --global user.email 'asiazhang2002@gmail.com'
+
+script:
+- hexo generate
+
+after_success:
+- sed -i -e "s/repo:\shttps:\/\/repo/repo:\shttps:\/\/${GH_TOKEN}@github.com\/wecode-today\/wecode-today.github.io.git/" _config.yml
+- hexo deploy
