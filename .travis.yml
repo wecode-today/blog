@@ -35,4 +35,5 @@ script:
 
 after_success:
 - sed -i -e "s/repo:\shttps:\/\/repo/repo:\shttps:\/\/${GH_TOKEN}@github.com\/wecode-today\/wecode-today.github.io.git/" _config.yml
+- cat _config.yml
 - hexo deploy
