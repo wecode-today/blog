@@ -47,3 +47,16 @@ docker rm $(docker ps -a -q)
 docker rmi $(docker images -q -f dangling=true)
 ```
 这样就能减少大量的untagged镜像，节省磁盘空间。
+
+# 更新于2017-10-16
+新版本Docker支持`prune`命令来清理悬挂镜像，使用更方便。
+
+```
+docker image prune
+```
+
+通过增加`-a`参数，我们还可以清理全部没有使用的镜像。
+
+```
+docker image prune -a
+```
