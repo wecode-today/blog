@@ -37,6 +37,8 @@ tags:
     ```
 部署完成后就可以使用docker-compose来进行镜像的下载和容器的启动了。
 
+<!-- more -->
+
 # 使用Docker部署MySQL（每台VM）
 首先我们要编写DockerCompose文件，用于配置MySQL镜像的启动。
 
